@@ -1,0 +1,15 @@
+.search-box-container{position: relative; width:200px;}
+.search-box-container #searchbox{width:100%; padding:10px 0;}
+.search-box-container img {
+    display: none;
+    position: absolute;
+right: 0px;
+top: 6px;
+float: right;
+width: 27px;
+z-index: 999999;
+}
+
+.search-box-container.loading img {
+  display: block
+}
