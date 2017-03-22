@@ -20,6 +20,22 @@ module.exports = {
 
   getUser : function(req, res) {
     controller.generic.getUser(req, res)
+  },
+
+  getPatients : function(req, res) {
+    controller.generic.getPatients(req, res)
+  },
+
+  getStudy : function(req, res) {
+    controller.generic.getStudy(req, res)
+  },
+
+  getSeries : function(req, res) {
+    controller.generic.getSeries(req, res)
+  },
+
+  getInstance : function(req, res) {
+    controller.generic.getInstance(req, res)
   }
 
 }

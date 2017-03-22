@@ -1,47 +1,140 @@
-// var knex = require('knex')({
-// 	client: 'pg',
-// 	connection: {
-// 	    host     : 'ec2-54-163-224-108.compute-1.amazonaws.com',
-// 			port: 5432,
-//         user     : 'klgevxyemxznyx',
-//         password : '934d15e1669c7413669ae386f7f0517972eadb40995a6dff358922291246793b',
-//         database : 'de8rgh8tv2v743',
-// 				ssl : true
-// 	}
-// });
-//Using postgress as mysql instance is down!!!
-var twitter = require('twitter');
+
 var config = require('../../config');
-var twit = new twitter(config.twitter);
 var async = require('async');
 var _ = require('underscore');
-var sockets = require('../../socketEvents');
-var io;
 var rest = require('restler');
-console.log(sockets);
-console.log('DB Connection Established');
+var request = require('request');
+var dicom = require('dicom');
+var fs = require("fs");
+var parser = require('../../utilities/parser');
+
+var decoder = dicom.decoder({
+    guess_header: true
+});
+var encoder = new dicom.json.JsonEncoder();
 
 var self = module.exports = {
-  //Methods Here
-	sockets : function(server){
-		io = require('socket.io').listen(server);
-	},
 
-	getUser : function(req, res) {
-		var name = req.params.name
-		var server_url = "https://api.github.com/search/users?q="+ name +"+in:login+type:user&per_page=10";
+	/*
+		Get list of patients from the server
+	*/
+
+	getPatients : function(req, res) {
+
+		var server_url = "http://35.154.52.109/patients?expand";
 		rest.get(server_url).on('complete', function(data) {
-		  //console.log(data);
-			if(data.items) {
+
+			if(data && data.length > 0) {
 				res.json({statusCode : 200, data : data})
 			} else {
-				res.json({statusCode : 200, data : 'limit_reached'})
+				res.json({statusCode : 200, data : []})
 			}
 
 		}).on('error', function(data) {
-		  //console.log(data);
 			res.json({statusCode : 500, data : data})
 		});
+
+	},
+
+	/*
+		Get studies for the patients from the study ids passed
+
+		1 - Get all study ids
+		2 - Query the server
+		3 - Format and return response
+
+	*/
+	getStudy : function (req, res){
+		//Array of ids
+		var requestData = req.body.study
+		var returnArray = []
+
+		async.eachLimit(requestData, 5, function(param, eachCb) {
+        var server_url = "http://35.154.52.109/studies/" + param;
+        rest.get(server_url).on('complete', function(data){
+						if(data) {
+							var processedData = data;
+	            returnArray.push(processedData);
+	            eachCb(null);
+						} else {
+							//pass
+							eachCb(null);
+						}
+
+        });
+    }, function(err) {
+        // done with all ajax calls
+        res.json({statusCode : 200, statusMessage : "Successfully Fetched", data : returnArray});
+    });
+
+	},
+
+	/*
+		Get series for the patients from the series ids passed
+
+		1 - Get all series ds
+		2 - Query the server
+		3 - Format and return response
+
+	*/
+
+	getSeries : function (req, res){
+		//Array of ids
+		var requestData = req.body.series
+		var returnArray = []
+
+		async.eachLimit(requestData, 5, function(param, eachCb) {
+        var server_url = "http://35.154.52.109/series/" + param;
+        rest.get(server_url).on('complete', function(data){
+						if(data) {
+							var processedData = data;
+	            returnArray.push(processedData);
+	            eachCb(null);
+						} else {
+							//pass
+							eachCb(null);
+						}
+
+        });
+    }, function(err) {
+        // done with all ajax calls
+        res.json({statusCode : 200, statusMessage : "Successfully Fetched", data : returnArray});
+    });
+
+	},
+
+	getInstance : function(req, res) {
+		var requestId = req.body.instance_id
+		var server_url = "http://35.154.52.109/instances/" + requestId + "/file"
+		console.log(server_url);
+
+		var print_element = function(json, elem) {
+		    console.log(dicom.json.get_value(json, elem));
+		};
+
+		// var sink = new dicom.json.JsonSink(function(err, json) {
+		//     if (err) {
+		//       console.log("Error:", err);
+		//       return
+		//     }
+		//     print_element(json, dicom.tags.PatientID);
+		//     print_element(json, dicom.tags.IssuerOfPatientID);
+		//     print_element(json, dicom.tags.StudyInstanceUID);
+		//     print_element(json, dicom.tags.AccessionNumber);
+		// });
+
+		request.get(server_url)
+		.on('response', function(response){
+			console.log(response.headers['content-type'])
+			parser.dcmController(response, print_element)
+		})
+
+
+
+		// rest.get(server_url).on('complete', function(dcm) {
+		// 	console.log("DCM FILE FETCHED")
+		// 	fs.createReadStream(dcm).pipe(decoder).pipe(encoder).pipe(sink);
+		// })
 	}
 
 }
