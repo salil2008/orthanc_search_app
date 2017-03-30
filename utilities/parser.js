@@ -1,53 +1,90 @@
 var config = require('../config');
 var async = require('async');
 var _ = require('underscore');
-var rest = require('restler');
-var request = require('request');
 var dicom = require('dicom');
 var fs = require("fs");
-var Busboy = require('busboy');
+var Rusha = require('rusha');
+var dicomParser = require('../node_modules/dicom-parser/dist/dicomParser');
 
-var decoder = dicom.decoder({
-    guess_header: true
-});
-var encoder = new dicom.json.JsonEncoder();
+function sha1(buffer, offset, length) {
+  offset = offset || 0;
+  length = length || buffer.length;
+  var subArray = dicomParser.sharedCopy(buffer, offset, length);
+  var rusha = new Rusha();
+  return rusha.digest(subArray);
+}
 
 var self = module.exports = {
-  dcmController : function(req, callback) {
-    //console.log(file);
+  dcmController : function(filePath) {
 
-    // Create an Busyboy instance passing the HTTP Request headers.
-    var busboy = new Busboy({ headers: req.headers });
+    console.log('File Path = ', filePath);
+    var dicomFileAsBuffer = fs.readFileSync('/home/salil/salil_workspace/orthanc_search_app/image.dcm');
+    console.log(dicomFileAsBuffer);
 
-    // Listen for event when Busboy finds a file to stream.
-    busboy.on('file', function (fieldname, file, filename, encoding, mimetype) {
+    // Print the sha1 hash for the overall file
+    console.log('File SHA1 hash = ' + sha1(dicomFileAsBuffer));
 
-      // We are streaming! Handle chunks
-      file.on('data', function (data) {
-        // Here we can act on the data chunks streamed.
-        console.log('Handle chunks of data')
-        console.log(data)
-      });
+    // Parse the dicom file
+   try {
+     var dataSet = dicomParser.parseDicom(dicomFileAsBuffer);
 
-      // Completed streaming the file.
-      file.on('end', function () {
-        console.log('Finished with ' + fieldname);
-      });
+   // print the patient's name
+     var patientName = dataSet.string('x00100010');
+     console.log('Patient Name = '+ patientName);
+
+   // Get the pixel data element and calculate the SHA1 hash for its data
+     var pixelData = dataSet.elements.x7fe00010;
+     var pixelDataBuffer = dicomParser.sharedCopy(dicomFileAsBuffer, pixelData.dataOffset, pixelData.length);
+     console.log('Pixel Data length = ', pixelDataBuffer.length);
+     console.log("Pixel Data SHA1 hash = ", sha1(pixelDataBuffer));
+
+
+     if(pixelData.encapsulatedPixelData) {
+       var imageFrame = dicomParser.readEncapsulatedPixelData(dataSet, pixelData, 0);
+       console.log('Old Image Frame length = ', imageFrame.length);
+       console.log('Old Image Frame SHA1 hash = ', sha1(imageFrame));
+
+       if(pixelData.basicOffsetTable.length) {
+         var imageFrame = dicomParser.readEncapsulatedImageFrame(dataSet, pixelData, 0);
+         console.log('Image Frame length = ', imageFrame.length);
+         console.log('Image Frame SHA1 hash = ', sha1(imageFrame));
+       } else {
+         var imageFrame = dicomParser.readEncapsulatedPixelDataFromFragments(dataSet, pixelData, 0, pixelData.fragments.length);
+         console.log('Image Frame length = ', imageFrame.length);
+         console.log('Image Frame SHA1 hash = ', sha1(imageFrame));
+       }
+     }
+
+   }
+   catch(ex) {
+     console.log(ex);
+   }
+
+ },
+
+ dcmController2 : function(filePath) {
+    var decoder = dicom.decoder({
+        guess_header: true
     });
 
-    // Listen for event when Busboy finds a non-file field.
-    busboy.on('field', function (fieldname, val) {
-      // Do something with non-file field.
+    var encoder = new dicom.json.JsonEncoder();
+
+    var print_element = function(json, elem) {
+        console.log(dicom.json.get_value(json, elem));
+    };
+
+    var sink = new dicom.json.JsonSink(function(err, json) {
+        if (err) {
+          console.log("HERE");
+          console.log("Error:", err);
+          process.exit(10);
+        }
+        print_element(json, dicom.tags.PatientID);
+        print_element(json, dicom.tags.IssuerOfPatientID);
+        print_element(json, dicom.tags.StudyInstanceUID);
+        print_element(json, dicom.tags.AccessionNumber);
     });
 
-    // Listen for event when Busboy is finished parsing the form.
-    busboy.on('finish', function () {
-      res.statusCode = 200;
-      res.end();
-    });
-
-    // Pipe the HTTP Request into Busboy.
-    req.pipe(busboy);
-
-  }
+    fs.createReadStream(filePath).pipe(decoder).pipe(encoder).pipe(sink);
+ }
 }

@@ -4,14 +4,14 @@ var async = require('async');
 var _ = require('underscore');
 var rest = require('restler');
 var request = require('request');
-var dicom = require('dicom');
 var fs = require("fs");
+var daikon = require('daikon');
+var oc = require('orthanc-client');
+var appRoot = require('app-root-path');
 var parser = require('../../utilities/parser');
-
-var decoder = dicom.decoder({
-    guess_header: true
-});
-var encoder = new dicom.json.JsonEncoder();
+var dicomParser = require('../../node_modules/dicom-parser/dist/dicomParser');
+var Rusha = require('../../node_modules/rusha');
+var dicomjs = require('dicomjs');
 
 var self = module.exports = {
 
@@ -105,36 +105,63 @@ var self = module.exports = {
 
 	getInstance : function(req, res) {
 		var requestId = req.body.instance_id
-		var server_url = "http://35.154.52.109/instances/" + requestId + "/file"
+		var server_url = "http://35.154.52.109/instances/" + requestId + "/0/image-uint8"
+    var image_name;
 		console.log(server_url);
 
-		var print_element = function(json, elem) {
-		    console.log(dicom.json.get_value(json, elem));
-		};
+		// request.get(server_url)
+    // .on('response', function(response) {
+	  //   console.log(response.statusCode)
+	  //   console.log(response.headers['content-type'])
+		// 	var str = (response.headers['content-disposition']).split('=')
+		// 	var filePath = appRoot+ '/' + str[1].replace(/['"]+/g, '')
+		// 	console.log("File Path")
+		// 	console.log(filePath)
+		//
+		// 	response.pipe(fs.createWriteStream(str[1].replace(/['"]+/g, '')))
+		//
+		// 	dicomjs.parseFile(filePath, function (err, dcmData) {
+		// 	    console.log('Parsing file complete..');
+		//
+		// 	    if (!err) {
+		// 	        /// Reading patient name
+		// 	        var patientName = dcmData.dataset['00100010'].value;
+		//
+		// 	        /// TODO: Add more code here..
+		// 	    } else {
+		// 					console.log("ERROR")
+		// 	        console.log(err);
+		// 	    }
+		// 	});
+		//
+  	// })
 
-		// var sink = new dicom.json.JsonSink(function(err, json) {
-		//     if (err) {
-		//       console.log("Error:", err);
-		//       return
-		//     }
-		//     print_element(json, dicom.tags.PatientID);
-		//     print_element(json, dicom.tags.IssuerOfPatientID);
-		//     print_element(json, dicom.tags.StudyInstanceUID);
-		//     print_element(json, dicom.tags.AccessionNumber);
-		// });
 
 		request.get(server_url)
-		.on('response', function(response){
-			console.log(response.headers['content-type'])
-			parser.dcmController(response, print_element)
-		})
+    .on('response', function(response) {
+	    console.log(response.statusCode)
+	    console.log(response.headers['content-type'])
+			response.pipe(fs.createWriteStream('image.png'))
+			var filePath = appRoot+ '/image.png'
+			console.log("File Path")
+			console.log(filePath)
 
+			dicomjs.parseFile(filePath, function (err, dcmData) {
+			    console.log('Parsing file complete..');
 
+			    if (!err) {
+			        /// Reading patient name
+			        var patientName = dcmData.dataset['00100010'].value;
 
-		// rest.get(server_url).on('complete', function(dcm) {
-		// 	console.log("DCM FILE FETCHED")
-		// 	fs.createReadStream(dcm).pipe(decoder).pipe(encoder).pipe(sink);
-		// })
+			        /// TODO: Add more code here..
+			    } else {
+							console.log("ERROR")
+			        console.log(err);
+			    }
+			});
+
+  	})
+
 	}
 
 }

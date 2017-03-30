@@ -19,7 +19,7 @@ function sha1(buffer, offset, length) {
 
 // Read the DICOM P10 file from disk into a Buffer
 var fs = require('fs');
-var filePath = process.argv[2];
+var filePath = '/home/salil/salil_workspace/orthanc_search_app/1274bc28-4483-462d-93d9-fa55a09bcc34.dcm';
 console.log('File Path = ', filePath);
 var dicomFileAsBuffer = fs.readFileSync(filePath);
 
@@ -31,6 +31,7 @@ try {
   var dataSet = dicomParser.parseDicom(dicomFileAsBuffer);
 
 // print the patient's name
+  console.log(dataSet)
   var patientName = dataSet.string('x00100010');
   console.log('Patient Name = '+ patientName);
 

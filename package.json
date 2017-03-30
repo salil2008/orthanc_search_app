@@ -9,11 +9,14 @@
     "start": "npm install"
   },
   "dependencies": {
+    "app-root-path": "^2.0.1",
     "async": "^2.1.5",
     "body-parser": "^1.16.1",
     "busboy": "^0.2.14",
+    "daikon": "^1.2.17",
     "dicom": "^0.4.2",
     "dicom-parser": "^1.7.4",
+    "dicomjs": "0.0.9",
     "express": "~4.9.7",
     "express-handlebars": "~1.1.0",
     "jquery": "^3.1.1",
@@ -22,6 +25,7 @@
     "mysql": "^2.12.0",
     "node-jsx": "~0.12.4",
     "node-localstorage": "^1.3.0",
+    "orthanc-client": "^0.10.5",
     "pg": "^6.1.2",
     "react": "~0.14.6",
     "restler": "^3.4.0",
