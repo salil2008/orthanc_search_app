@@ -105,49 +105,32 @@ var self = module.exports = {
 		var server_url = "http://35.154.52.109/instances/" + requestId + "/file"
     var image_name;
 		console.log(server_url);
+		//console.log(dict.TAG_DICT);
 
-		http.get(server_url, function(res) {
+		http.get(server_url, function(response) {
 			console.log("hit");
 			var i = 0
 			var data = [];
-			res.on("data", function(chunk) {
+			var tagSet = []
+			response.on("data", function(chunk) {
 				console.log(i);
 				data.push(chunk);
 				i = i + 1
 			});
-			res.on("end", function() {
+			response.on("end", function() {
 				data = Buffer.concat(data);
 				var byteArray = new Uint8Array(data);
 
-				try
-				{
-				   // Parse the byte array to get a DataSet object that has the parsed contents
-				    var dataSet = dicomParser.parseDicom(byteArray/*, options */);
-
-				    // access a string element
-				    var studyInstanceUid = dataSet.string('x0020000d');
-						var patientName = dataSet.string('x00100010');
-			      console.log('Patient Name = '+ patientName);
-						console.log(studyInstanceUid);
-
-				    // get the pixel data element (contains the offset and length of the data)
-				    var pixelDataElement = dataSet.elements.x7fe00010;
-						console.log(pixelDataElement);
-
-				    // create a typed array on the pixel data (this example assumes 16 bit unsigned data)
-				    var pixelData = new Uint16Array(dataSet.byteArray.buffer, pixelDataElement.dataOffset, pixelDataElement.length);
-				}
-				catch(ex)
-				{
-				   console.log('Error parsing byte stream' - ex);
-				}
+				parser.dcmController(byteArray, function(err, result){
+					if(err) {
+						console.log(err);
+					} else if(result) {
+						res.json({statusCode : 200, statusMessage : "Successfully Fetched", data : result});
+					}
+				})
 
 			});
 		});
-
-	},
-
-	getInstance : function(req, res) {
 
 	}
 
