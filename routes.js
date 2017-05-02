@@ -34,6 +34,10 @@ module.exports = {
     controller.generic.getSeries(req, res)
   },
 
+  streamInstance : function(req, res) {
+    controller.generic.streamInstance(req, res)
+  },
+
   getInstance : function(req, res) {
     controller.generic.getInstance(req, res)
   }

@@ -26,7 +26,8 @@ app.get('/', routes.index);
 app.get('/patients', routes.getPatients);
 app.post('/studies', routes.getStudy);
 app.post('/series', routes.getSeries);
-app.post('/instances', routes.getInstance);
+app.post('/instances', routes.streamInstance);
+app.post('/instances/getTags', routes.getInstance);
 
 app.use("/", express.static(__dirname + "/public/"));
 

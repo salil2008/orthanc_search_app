@@ -5,13 +5,10 @@ var _ = require('underscore');
 var rest = require('restler');
 var request = require('request');
 var fs = require("fs");
-var daikon = require('daikon');
-var oc = require('orthanc-client');
+var http = require('http');
 var appRoot = require('app-root-path');
 var parser = require('../../utilities/parser');
 var dicomParser = require('../../node_modules/dicom-parser/dist/dicomParser');
-var Rusha = require('../../node_modules/rusha');
-var dicomjs = require('dicomjs');
 
 var self = module.exports = {
 
@@ -103,64 +100,54 @@ var self = module.exports = {
 
 	},
 
-	getInstance : function(req, res) {
+	streamInstance : function(req, res) {
 		var requestId = req.body.instance_id
-		var server_url = "http://35.154.52.109/instances/" + requestId + "/0/image-uint8"
+		var server_url = "http://35.154.52.109/instances/" + requestId + "/file"
     var image_name;
 		console.log(server_url);
 
-		// request.get(server_url)
-    // .on('response', function(response) {
-	  //   console.log(response.statusCode)
-	  //   console.log(response.headers['content-type'])
-		// 	var str = (response.headers['content-disposition']).split('=')
-		// 	var filePath = appRoot+ '/' + str[1].replace(/['"]+/g, '')
-		// 	console.log("File Path")
-		// 	console.log(filePath)
-		//
-		// 	response.pipe(fs.createWriteStream(str[1].replace(/['"]+/g, '')))
-		//
-		// 	dicomjs.parseFile(filePath, function (err, dcmData) {
-		// 	    console.log('Parsing file complete..');
-		//
-		// 	    if (!err) {
-		// 	        /// Reading patient name
-		// 	        var patientName = dcmData.dataset['00100010'].value;
-		//
-		// 	        /// TODO: Add more code here..
-		// 	    } else {
-		// 					console.log("ERROR")
-		// 	        console.log(err);
-		// 	    }
-		// 	});
-		//
-  	// })
-
-
-		request.get(server_url)
-    .on('response', function(response) {
-	    console.log(response.statusCode)
-	    console.log(response.headers['content-type'])
-			response.pipe(fs.createWriteStream('image.png'))
-			var filePath = appRoot+ '/image.png'
-			console.log("File Path")
-			console.log(filePath)
-
-			dicomjs.parseFile(filePath, function (err, dcmData) {
-			    console.log('Parsing file complete..');
-
-			    if (!err) {
-			        /// Reading patient name
-			        var patientName = dcmData.dataset['00100010'].value;
-
-			        /// TODO: Add more code here..
-			    } else {
-							console.log("ERROR")
-			        console.log(err);
-			    }
+		http.get(server_url, function(res) {
+			console.log("hit");
+			var i = 0
+			var data = [];
+			res.on("data", function(chunk) {
+				console.log(i);
+				data.push(chunk);
+				i = i + 1
 			});
+			res.on("end", function() {
+				data = Buffer.concat(data);
+				var byteArray = new Uint8Array(data);
 
-  	})
+				try
+				{
+				   // Parse the byte array to get a DataSet object that has the parsed contents
+				    var dataSet = dicomParser.parseDicom(byteArray/*, options */);
+
+				    // access a string element
+				    var studyInstanceUid = dataSet.string('x0020000d');
+						var patientName = dataSet.string('x00100010');
+			      console.log('Patient Name = '+ patientName);
+						console.log(studyInstanceUid);
+
+				    // get the pixel data element (contains the offset and length of the data)
+				    var pixelDataElement = dataSet.elements.x7fe00010;
+						console.log(pixelDataElement);
+
+				    // create a typed array on the pixel data (this example assumes 16 bit unsigned data)
+				    var pixelData = new Uint16Array(dataSet.byteArray.buffer, pixelDataElement.dataOffset, pixelDataElement.length);
+				}
+				catch(ex)
+				{
+				   console.log('Error parsing byte stream' - ex);
+				}
+
+			});
+		});
+
+	},
+
+	getInstance : function(req, res) {
 
 	}
 
