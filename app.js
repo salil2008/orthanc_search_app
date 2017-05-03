@@ -1,7 +1,7 @@
 var React = require('react');
-var SearchApp = require('./components/search-app-main.react');
+var OrthancApp = require('./components/search-app-main.react');
 
 React.render(
-  <SearchApp />,
+  <OrthancApp />,
   document.getElementById('my_app')
 );

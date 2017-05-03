@@ -1,13 +1,13 @@
 var JSX = require('node-jsx').install(),
   React = require('react'),
-  searchApp = React.createFactory(require('./components/search-app-main.react')),
+  OrthancApp = React.createFactory(require('./components/search-app-main.react')),
   controller = require('./controller');
 
 module.exports = {
 
   index: function(req, res) {
     var markup = React.renderToString(
-      searchApp({
+      OrthancApp({
         start: 'none'
       })
     );

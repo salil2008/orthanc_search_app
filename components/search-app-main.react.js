@@ -2,7 +2,7 @@
 var React = require('react');
 var $ = require('jquery');
 var ResultSet = require('./result-set.react');
-var SearchBox = require('./search-box.react');
+var OrthancApp = require('./search-box.react');
 
 module.exports = SearchApp = React.createClass({
 
@@ -133,8 +133,8 @@ module.exports = SearchApp = React.createClass({
 
     return (
       <div className="search-app">
-        <h2 > Search Box </h2>
-        <SearchBox change = {this.onChange} rlist = {this.state.remembered} />
+        <h2 > OrthancApp </h2>
+        <OrthancApp change = {this.onChange} rlist = {this.state.remembered} />
         <ResultSet list = {this.state.list} />
       </div>
     )
