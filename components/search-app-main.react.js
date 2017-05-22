@@ -1,7 +1,6 @@
 
 var React = require('react');
-var $ = require('jquery');
-var ResultSet = require('./result-set.react');
+var $ = require('jquery'); 
 var OrthancApp = require('./search-box.react');
 
 module.exports = SearchApp = React.createClass({
@@ -22,7 +21,7 @@ module.exports = SearchApp = React.createClass({
 
   componentDidMount: function(){
     console.log("componentDidMount");
-    
+
   },
 
   componentWillMount : function() {
@@ -42,8 +41,8 @@ module.exports = SearchApp = React.createClass({
   	});
   },
 
-  onChange : function(event){
-    console.log("Changed");
+  onClick : function(event){
+    console.log("Click");
 
 
   },
@@ -53,8 +52,7 @@ module.exports = SearchApp = React.createClass({
     return (
       <div className="search-app">
         <h2 > OrthancApp </h2>
-        <OrthancApp change = {this.onChange} rlist = {this.state.remembered} />
-        <ResultSet list = {this.state.list} />
+        <OrthancApp change = {this.onClick} rlist = {this.state.userlist} />
       </div>
     )
 
